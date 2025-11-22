@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: result
+  namespace: voting-app
+  labels:
+    app: result
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: result
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: result
+        tier: frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: result
+        # Replace <ACR_NAME> with your Azure Container Registry name
+        # Example: myregistry.azurecr.io/result:v2
+        image: <ACR_NAME>.azurecr.io/result:v2
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 4000
+          name: http
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: voting-app-config
+              key: PORT
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: postgres-url
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 4000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 4000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+

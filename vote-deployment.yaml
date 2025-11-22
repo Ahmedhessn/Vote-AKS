@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vote
+  namespace: voting-app
+  labels:
+    app: vote
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vote
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: vote
+        tier: frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: vote
+        # Replace <ACR_NAME> with your Azure Container Registry name
+        # Example: myregistry.azurecr.io/vote:v2
+        image: <ACR_NAME>.azurecr.io/vote:v2
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: OPTION_A
+          valueFrom:
+            configMapKeyRef:
+              name: voting-app-config
+              key: OPTION_A
+        - name: OPTION_B
+          valueFrom:
+            configMapKeyRef:
+              name: voting-app-config
+              key: OPTION_B
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: voting-app-config
+              key: REDIS_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+

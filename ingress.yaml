@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: voting-app-ingress
+  namespace: voting-app
+  annotations:
+    # Azure Application Gateway Ingress Controller annotations
+    appgw.ingress.kubernetes.io/ssl-redirect: "true"
+    appgw.ingress.kubernetes.io/backend-protocol: "http"
+    # Or use NGINX Ingress Controller (uncomment if using NGINX)
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  # For Application Gateway Ingress Controller
+  ingressClassName: azure-application-gateway
+  # For NGINX Ingress Controller (uncomment if using NGINX)
+  # ingressClassName: nginx
+  rules:
+  - host: voting-app.<YOUR_DOMAIN>.com  # Replace with your domain
+    http:
+      paths:
+      - path: /vote
+        pathType: Prefix
+        backend:
+          service:
+            name: vote
+            port:
+              number: 80
+      - path: /result
+        pathType: Prefix
+        backend:
+          service:
+            name: result
+            port:
+              number: 4000
+  # Uncomment for TLS/HTTPS
+  # tls:
+  # - hosts:
+  #   - voting-app.<YOUR_DOMAIN>.com
+  #   secretName: voting-app-tls-secret
+

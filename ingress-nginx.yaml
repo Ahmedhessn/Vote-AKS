@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: voting-app-ingress
+  namespace: voting-app
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: voting-app.local  # Change to your domain or use LoadBalancer IP
+    http:
+      paths:
+      - path: /vote
+        pathType: Prefix
+        backend:
+          service:
+            name: vote
+            port:
+              number: 80
+      - path: /result
+        pathType: Prefix
+        backend:
+          service:
+            name: result
+            port:
+              number: 4000
+

@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: voting-app
+  labels:
+    app: worker
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: worker
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: worker
+        tier: backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: worker
+        # Replace <ACR_NAME> with your Azure Container Registry name
+        # Example: myregistry.azurecr.io/worker:v2
+        image: <ACR_NAME>.azurecr.io/worker:v2
+        imagePullPolicy: Always
+        env:
+        - name: POSTGRES_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: postgres-connection-string
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: voting-app-config
+              key: REDIS_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "ps aux | grep -v grep | grep dotnet"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "ps aux | grep -v grep | grep dotnet"
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
